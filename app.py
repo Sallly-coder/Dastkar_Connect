@@ -7,7 +7,7 @@ load_dotenv()
 
 from init_db import init_db
 from seed import seed_db
-from security import auth_bp
+from routes.auth import auth_bp
 
 if not os.environ.get("SECRET_KEY"):
     raise RuntimeError("SECRET_KEY is missing. Create a .env file.")
