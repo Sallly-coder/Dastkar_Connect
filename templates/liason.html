@@ -1,1 +1,36 @@
-
+{% extends "base.html" %}
+{% block content %}
+<h1>Orders</h1>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>#</th><th>Request</th><th>Status</th><th>Action</th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+  <tr>
+    <td>{{ o.id }}</td>
+    <td>{{ o.original_spec }}
+      {% if o.inspiration_url %}<br><img class="thumb" src="{{ o.inspiration_url }}" alt="Inspiration">{% endif %}
+    </td>
+    <td>{{ o.status }}</td>
+    <td>
+      {% if o.status == 'DRAFT' %}
+        <form method="post" action="{{ url_for('pages.liaison_assign', order_id=o.id) }}">
+          <textarea name="translated_spec" placeholder="Translated spec" required></textarea>
+          <select name="artisan_id" required>
+            {% for a in artisans %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
+          </select>
+          <button>Assign</button>
+        </form>
+      {% elif o.status == 'REVIEW' %}
+        <img class="thumb" src="{{ o.final_url }}" alt="Finished work">
+        <form method="post" action="{{ url_for('pages.liaison_approve', order_id=o.id) }}">
+          <button>Approve</button>
+        </form>
+      {% else %}—{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
