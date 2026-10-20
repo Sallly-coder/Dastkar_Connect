@@ -1,4 +1,3 @@
-# S2: all page routes
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, g, current_app, send_from_directory)
 from security import login_required, role_required
@@ -8,13 +7,6 @@ from services.orders import OrderError
 bp = Blueprint("pages", __name__)
 HOME = {"BUYER": "pages.buyer", "LIAISON": "pages.liaison", "ARTISAN": "pages.artisan"}
 
-from flask import Blueprint
-
-pages_bp = Blueprint("pages", __name__)
-
-@pages_bp.route("/")
-def home():
-    return "Logged in. Home page works."
 
 def attempt(action, ok_message):
     """Run a service call and flash success or the error message."""
