@@ -68,3 +68,6 @@ def require_role(*roles):
             return f(*args, **kwargs)
         return wrapper
     return decorator
+
+login_required = verify_token
+role_required = require_role
