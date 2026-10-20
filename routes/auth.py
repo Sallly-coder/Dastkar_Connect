@@ -6,14 +6,6 @@ from flask import (Blueprint, flash, g, jsonify, redirect, render_template,
 from db import get_db
 from security import check_password, create_token, hash_password, require_role, verify_token
 
-auth_bp = Blueprint("auth", __name__)
-from flask import Blueprint
-
-pages_bp = Blueprint("pages", __name__)
-
-@pages_bp.route("/")
-def home():
-    return "Home placeholder"
 
 # Where each role lands after login. Replace the endpoints once your
 # teammates agree on their page names.
