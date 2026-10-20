@@ -1,72 +1,85 @@
-# S1: /login, /register, /logout
 import sqlite3
 
-from flask import Blueprint, g, jsonify, request
+from flask import (Blueprint, flash, g, jsonify, redirect, render_template,
+                   request, url_for)
 
 from db import get_db
 from security import check_password, create_token, hash_password, require_role, verify_token
 
 auth_bp = Blueprint("auth", __name__)
-VALID_ROLES = {"BUYER", "LIAISON", "ARTISAN"}
+
+# Where each role lands after login. Replace the endpoints once your
+# teammates agree on their page names.
+ROLE_HOME = {
+    "BUYER": "pages.home",
+    "LIAISON": "pages.home",
+    "ARTISAN": "pages.home",
+}
 
 
-@auth_bp.post("/register")
+@auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    data = request.get_json(silent=True) or {}
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-    role = data.get("role")
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
 
-    if not name or not email or not password or not role:
-        return jsonify(error="name, email, password and role are required"), 400
-    if role not in VALID_ROLES:
-        return jsonify(error="role must be BUYER, LIAISON or ARTISAN"), 400
-    if len(password) < 8 or len(password.encode()) > 72:
-        return jsonify(error="password must be 8 to 72 characters"), 400
-
-    conn = get_db()
-    try:
-        cur = conn.execute(
-            "INSERT INTO users (name, email, password_hash, role) VALUES (?,?,?,?)",
-            (name, email, hash_password(password), role),
-        )
-        conn.commit()
-        user_id = cur.lastrowid
-    except sqlite3.IntegrityError:
-        return jsonify(error="Email already registered"), 409
-    finally:
-        conn.close()
-
-    return jsonify(id=user_id, name=name, email=email, role=role), 201
+        if not name or not email or not password:
+            flash("Name, email and password are required", "error")
+        elif len(password) < 8 or len(password.encode()) > 72:
+            flash("Password must be 8 to 72 characters", "error")
+        else:
+            conn = get_db()
+            try:
+                conn.execute(
+                    "INSERT INTO users (name, email, password_hash, role) VALUES (?,?,?,?)",
+                    (name, email, hash_password(password), "BUYER"),  # role is forced
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                flash("Email already registered", "error")
+            else:
+                flash("Account created. Please log in.", "success")
+                return redirect(url_for("auth.login"))
+            finally:
+                conn.close()
+    return render_template("register.html")
 
 
-@auth_bp.post("/login")
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    data = request.get_json(silent=True) or {}
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
 
-    conn = get_db()
-    try:
-        user = conn.execute(
-            "SELECT id, password_hash, role FROM users WHERE email = ?", (email,)
-        ).fetchone()
-    finally:
-        conn.close()
+        conn = get_db()
+        try:
+            user = conn.execute(
+                "SELECT id, password_hash, role FROM users WHERE email = ?", (email,)
+            ).fetchone()
+        finally:
+            conn.close()
 
-    if user is None or not check_password(password, user["password_hash"]):
-        return jsonify(error="Invalid email or password"), 401
-
-    return jsonify(token=create_token(user["id"], user["role"]), role=user["role"])
+        if user is None or not check_password(password, user["password_hash"]):
+            flash("Invalid email or password", "error")
+        else:
+            resp = redirect(url_for(ROLE_HOME[user["role"]]))
+            resp.set_cookie(
+                "token",
+                create_token(user["id"], user["role"]),
+                httponly=True,   # JavaScript can't read it
+                samesite="Lax",
+                max_age=86400,   # 1 day, same as the token
+            )
+            return resp
+    return render_template("login.html")
 
 
 @auth_bp.post("/logout")
-@verify_token
 def logout():
-    # JWTs are stateless, so the server has nothing to delete.
-    # The client logs out by discarding its stored token.
-    return jsonify(message="Logged out")
+    resp = redirect(url_for("auth.login"))
+    resp.delete_cookie("token")
+    return resp
 
 
 # --- Temporary test routes: delete once teammates' routes exist ---

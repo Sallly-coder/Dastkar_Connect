@@ -5,7 +5,7 @@ from functools import wraps
 
 import bcrypt
 import jwt
-from flask import g, jsonify, request
+from flask import abort, flash, g, jsonify, redirect, request, url_for
 
 
 def hash_password(plain: str) -> str:
@@ -28,18 +28,30 @@ def create_token(user_id: int, role: str) -> str:
     )
 
 
+def _fail(message, api):
+    if api:
+        return jsonify(error=message), 401
+    flash(message, "error")
+    return redirect(url_for("auth.login"))
+
+
 def verify_token(f):
+    """Accepts the token from a Bearer header (API clients) or the 'token'
+    cookie (browser pages). Sets g.user = {'id': ..., 'role': ...}."""
     @wraps(f)
     def wrapper(*args, **kwargs):
         header = request.headers.get("Authorization", "")
-        if not header.startswith("Bearer "):
-            return jsonify(error="Missing or malformed Authorization header"), 401
+        api = bool(header)
+        token = header[7:] if header.startswith("Bearer ") else request.cookies.get("token")
+
+        if not token:
+            return _fail("Please log in", api)
         try:
-            payload = jwt.decode(header[7:], os.environ["SECRET_KEY"], algorithms=["HS256"])
+            payload = jwt.decode(token, os.environ["SECRET_KEY"], algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
-            return jsonify(error="Token expired"), 401
+            return _fail("Session expired, please log in again", api)
         except jwt.InvalidTokenError:
-            return jsonify(error="Invalid token"), 401
+            return _fail("Invalid session, please log in again", api)
 
         g.user = {"id": int(payload["sub"]), "role": payload["role"]}
         return f(*args, **kwargs)
@@ -52,7 +64,7 @@ def require_role(*roles):
         @verify_token
         def wrapper(*args, **kwargs):
             if g.user["role"] not in roles:
-                return jsonify(error="Forbidden: insufficient role"), 403
+                abort(403)
             return f(*args, **kwargs)
         return wrapper
     return decorator

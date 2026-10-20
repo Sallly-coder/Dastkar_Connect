@@ -13,6 +13,7 @@ if not os.environ.get("SECRET_KEY"):
     raise RuntimeError("SECRET_KEY is missing. Create a .env file.")
 
 app = Flask(__name__)
+app.secret_key = os.environ["SECRET_KEY"]
 app.register_blueprint(auth_bp)
 
 
