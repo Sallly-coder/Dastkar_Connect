@@ -8,10 +8,11 @@ load_dotenv()
 from init_db import init_db
 from seed import seed_db
 from routes.auth import auth_bp
+from routes.pages import pages_bp
 
 if not os.environ.get("SECRET_KEY"):
     raise RuntimeError("SECRET_KEY is missing. Create a .env file.")
-
+app.register_blueprint(pages_bp)
 app = Flask(__name__)
 app.secret_key = os.environ["SECRET_KEY"]
 app.register_blueprint(auth_bp)
@@ -28,3 +29,4 @@ def seed_command():
     """Insert the test users."""
     seed_db()
     print("Seeded 3 users.")
+
