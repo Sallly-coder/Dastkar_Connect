@@ -15,6 +15,7 @@ if not os.environ.get("SECRET_KEY"):
 
 app = Flask(__name__)
 app.secret_key = os.environ["SECRET_KEY"]
+app.config["UPLOAD_FOLDER"] = "uploads"
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(pages_bp)
