@@ -1,1 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>New order</h1>
+<form method="post" action="{{ url_for('pages.buyer_create') }}" enctype="multipart/form-data">
+  <textarea name="original_spec" placeholder="Describe what you want" required></textarea>
+  <input type="file" name="photo" accept="image/png,image/jpeg">
+  <button>Submit order</button>
+</form>
 
+<h2>My orders</h2>
+{% for o in orders %}
+  <div class="card">
+    <strong>#{{ o.id }}</strong> <span class="badge">{{ o.status }}</span>
+    <p>{{ o.original_spec }}</p>
+    {% if o.status == 'COMPLETED' and o.final_url %}
+      <img src="{{ o.final_url }}" alt="Finished work">
+    {% endif %}
+  </div>
+{% else %}
+  <p>No orders yet.</p>
+{% endfor %}
+{% endblock %}
