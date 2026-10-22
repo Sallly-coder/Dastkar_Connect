@@ -1,1 +1,4 @@
-# S1
+   flask
+   bcrypt
+   pyjwt
+   python-dotenv
