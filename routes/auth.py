@@ -15,11 +15,7 @@ ROLE_HOME = {
     "LIAISON": "pages.home",
     "ARTISAN": "pages.home",
 }
-ROLE_HOME = {
-    "BUYER": "auth.me",
-    "LIAISON": "auth.me",
-    "ARTISAN": "auth.me",
-}
+
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
