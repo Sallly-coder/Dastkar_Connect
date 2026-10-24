@@ -1,36 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Orders</h1>
+<h1>My task</h1>
+
+{% if task %}
 <div class="table-wrap">
 <table>
-  <thead><tr><th>#</th><th>Request</th><th>Status</th><th>Action</th></tr></thead>
+  <thead><tr><th>#</th><th>What to make</th><th>Status</th><th>Action</th></tr></thead>
   <tbody>
-  {% for o in orders %}
   <tr>
-    <td>{{ o.id }}</td>
-    <td>{{ o.original_spec }}
-      {% if o.inspiration_url %}<br><img class="thumb" src="{{ o.inspiration_url }}" alt="Inspiration">{% endif %}
-    </td>
-    <td>{{ o.status }}</td>
+    <td>{{ task.id }}</td>
     <td>
-      {% if o.status == 'DRAFT' %}
-        <form method="post" action="{{ url_for('pages.liaison_assign', order_id=o.id) }}">
-          <textarea name="translated_spec" placeholder="Translated spec" required></textarea>
-          <select name="artisan_id" required>
-            {% for a in artisans %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
-          </select>
-          <button>Assign</button>
-        </form>
-      {% elif o.status == 'REVIEW' %}
-        <img class="thumb" src="{{ o.final_url }}" alt="Finished work">
-        <form method="post" action="{{ url_for('pages.liaison_approve', order_id=o.id) }}">
-          <button>Approve</button>
-        </form>
-      {% else %}—{% endif %}
+      {{ task.translated_spec }}
+      {% if task.inspiration_url %}
+        <br>
+        <a href="{{ task.inspiration_url }}" target="_blank">
+          <img class="thumb" src="{{ task.inspiration_url }}" alt="Buyer's reference photo">
+        </a>
+      {% endif %}
+    </td>
+    <td>{{ task.status }}</td>
+    <td>
+      <form method="post"
+            action="{{ url_for('pages.artisan_upload', order_id=task.id) }}"
+            enctype="multipart/form-data">
+        <input class="big-btn" type="file" name="photo"
+               accept="image/jpeg,image/png" capture="environment" required>
+        <button class="big-btn">Submit for review</button>
+      </form>
     </td>
   </tr>
-  {% endfor %}
   </tbody>
 </table>
 </div>
+{% else %}
+<p>No task assigned right now.</p>
+{% endif %}
 {% endblock %}
