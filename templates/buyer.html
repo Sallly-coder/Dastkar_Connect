@@ -1,37 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>New order</h1>
-<form method="post" action="{{ url_for('pages.buyer_create') }}" enctype="multipart/form-data">
-  <textarea name="original_spec" placeholder="Describe what you want" required></textarea>
-  <input type="file" name="photo" accept="image/png,image/jpeg">
-  <button>Submit order</button>
-</form>
+<div class="page-narrow">
+  <h1 class="page-title">New order</h1>
+  <p class="page-sub">Tell us what you'd like made. A reference photo helps the artisan.</p>
 
-<h2>My orders</h2>
-{% for o in orders %}
-  <div class="card">
-    <strong>#{{ o.id }}</strong> <span class="badge">{{ o.status }}</span>
-    <p>{{ o.original_spec }}</p>
+  <section class="panel">
+    <form method="post" action="{{ url_for('pages.buyer_create') }}" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="original_spec">What would you like made?</label>
+        <textarea class="field" id="original_spec" name="original_spec"
+                  placeholder="e.g. A blue block-printed tablecloth for a 6-seater table" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="photo">Reference photo (optional)</label>
+        <input class="file-field" type="file" id="photo" name="photo" accept="image/png,image/jpeg">
+        <p class="hint">JPG or PNG, up to 5 MB.</p>
+      </div>
+      <button class="btn-primary">Submit order</button>
+    </form>
+  </section>
 
-    <!-- Payment section added here inside the order card -->
-    {% if o.status == 'ASSIGNED' and o.payment_status == 'UNPAID' %}
-      <p>Please pay <strong>₹{{ o.price }}</strong> to {{ config.NGO_NAME }}.</p>
-      <img src="{{ url_for('static', filename='img/payment_qr.png') }}" alt="Payment QR" style="max-width:220px">
-      <p>Take a screenshot, or scan with any UPI app. UPI ID: {{ config.UPI_ID }}</p>
-      <form method="post" action="{{ url_for('pages.buyer_pay_ref', order_id=o.id) }}">
-        <input name="payment_ref" placeholder="UPI transaction ID (optional)">
-        <button>Save</button>
-      </form>
-    {% elif o.payment_status == 'PAID' %}
-      <p>Paid ✓</p>
-    {% endif %}
+  <h2 class="section-title">My orders</h2>
+  {% for o in orders %}
+    <article class="order-card">
+      <div class="order-head">
+        <strong>Order #{{ o.id }}</strong>
+        <span class="badge badge-{{ o.status|lower }}">{{ o.status }}</span>
+      </div>
+      <p>{{ o.original_spec }}</p>
 
-    <!-- Completed image view -->
-    {% if o.status == 'COMPLETED' and o.final_url %}
-      <img src="{{ o.final_url }}" alt="Finished work">
-    {% endif %}
-  </div>
-{% else %}
-  <p>No orders yet.</p>
-{% endfor %}
+      {% if o.status == 'ASSIGNED' and o.payment_status == 'UNPAID' %}
+        {% if o.payment_ref %}
+          <p class="pending-note">Reference {{ o.payment_ref }} saved. Waiting for the NGO to confirm your payment.</p>
+        {% else %}
+          <div class="pay-box">
+            <img class="qr" src="{{ url_for('static', filename='img/payment_qr.png') }}" alt="Payment QR code">
+            <div>
+              <p class="pay-amount">Please pay <strong>₹{{ o.price }}</strong></p>
+              <p>to {{ config.NGO_NAME }}</p>
+              <p class="hint">Scan with any UPI app, or screenshot this QR and scan it from your gallery.</p>
+              <p class="hint">UPI ID: <strong>{{ config.UPI_ID }}</strong></p>
+              <form class="inline-form" method="post" action="{{ url_for('pages.buyer_pay_ref', order_id=o.id) }}">
+                <input class="field" name="payment_ref" maxlength="40" placeholder="UPI transaction ID (optional)">
+                <button class="btn-primary">Save</button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+      {% elif o.payment_status == 'PAID' %}
+        <p class="paid-note">Paid ✓{% if o.status == 'ASSIGNED' %} · your order is with the artisan{% endif %}</p>
+      {% endif %}
+
+      {% if o.status == 'COMPLETED' and o.final_url %}
+        <img class="order-photo" src="{{ o.final_url }}" alt="Finished work">
+      {% endif %}
+    </article>
+  {% else %}
+    <p class="empty">No orders yet. Your first order will appear here.</p>
+  {% endfor %}
+</div>
 {% endblock %}

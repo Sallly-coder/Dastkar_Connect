@@ -1,47 +1,116 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Orders</h1>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>#</th><th>Request</th><th>Status</th><th>Action</th></tr></thead>
-  <tbody>
+<div class="page-wide">
+  <h1 class="page-title">Orders</h1>
+  <p class="page-sub">Translate each request, set a price and assign an artisan. Then confirm payments and approve finished work.</p>
+
   {% for o in orders %}
-  <tr>
-    <td>{{ o.id }}</td>
-    <td>{{ o.original_spec }}
-      {% if o.inspiration_url %}<br><img class="thumb" src="{{ o.inspiration_url }}" alt="Inspiration">{% endif %}
-    </td>
-    <td>{{ o.status }}</td>
-    <td>
-      {% if o.status == 'DRAFT' %}
-        <!-- Added price input field inside the assignment form -->
-        <form method="post" action="{{ url_for('pages.liaison_assign', order_id=o.id) }}">
-          <textarea name="translated_spec" placeholder="Translated spec" required></textarea>
-          <select name="artisan_id" required>
-            {% for a in artisans %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
-          </select>
-          <input type="number" name="price" min="1" placeholder="Price (₹)" required>
-          <button>Assign</button>
-        </form>
+  <article class="order-card">
+    <div class="order-head">
+      <strong>Order #{{ o.id }}</strong>
+      <span class="badge badge-{{ o.status|lower }}">{{ o.status }}</span>
+    </div>
 
-      {% elif o.status == 'ASSIGNED' and o.payment_status == 'UNPAID' %}
-        <!-- Added payment verification block for assigned unpaid orders -->
-        <p>Price: <strong>₹{{ o.price }}</strong></p>
-        {% if o.payment_ref %}<p>Buyer's transaction ID: {{ o.payment_ref }}</p>{% endif %}
-        <form method="post" action="{{ url_for('pages.liaison_confirm', order_id=o.id) }}">
-          <button>Confirm payment</button>
-        </form>
+    <div class="liaison-grid">
 
-      {% elif o.status == 'REVIEW' %}
-        <img class="thumb" src="{{ o.final_url }}" alt="Finished work">
-        <form method="post" action="{{ url_for('pages.liaison_approve', order_id=o.id) }}">
-          <button>Approve</button>
-        </form>
-      {% else %}—{% endif %}
-    </td>
-  </tr>
+      <!-- Left: what the buyer asked for -->
+      <div>
+        <h3 class="mini-title">Buyer's request</h3>
+        <p>{{ o.original_spec }}</p>
+        {% if o.inspiration_url %}
+          <a href="{{ o.inspiration_url }}" target="_blank">
+            <img class="thumb" src="{{ o.inspiration_url }}" alt="Buyer's reference photo">
+          </a>
+        {% endif %}
+
+        {% if o.translated_spec %}
+          <h3 class="mini-title">Translated for the artisan</h3>
+          <p>{{ o.translated_spec }}</p>
+        {% endif %}
+
+        {% if o.artisan_id %}
+          <p class="meta">Artisan:
+            {% for a in artisans if a.id == o.artisan_id %}<strong>{{ a.name }}</strong>{% endfor %}
+          </p>
+        {% endif %}
+        {% if o.price %}
+          <p class="meta">Price: <strong>₹{{ o.price }}</strong> ·
+            <span class="pay-pill pay-{{ o.payment_status|lower }}">{{ o.payment_status }}</span>
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Right: what the liaison can do next -->
+      <div class="action-box">
+
+        {% if o.status == 'DRAFT' %}
+          <h3 class="mini-title">Assign this order</h3>
+          {% if artisans %}
+          <form method="post" action="{{ url_for('pages.liaison_assign', order_id=o.id) }}">
+            <div class="form-group">
+              <label for="spec-{{ o.id }}">Translation for the artisan</label>
+              <textarea class="field" id="spec-{{ o.id }}" name="translated_spec"
+                        placeholder="Describe the work in the artisan's language" required></textarea>
+            </div>
+            <div class="form-group">
+              <label for="artisan-{{ o.id }}">Artisan</label>
+              <select class="field" id="artisan-{{ o.id }}" name="artisan_id" required>
+                {% for a in artisans %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="price-{{ o.id }}">Price (₹)</label>
+              <input class="field" id="price-{{ o.id }}" type="number" name="price"
+                     min="1" max="100000" step="1" placeholder="e.g. 1500" required>
+            </div>
+            <button class="btn-primary">Assign</button>
+          </form>
+          {% else %}
+            <p class="hint">No artisan accounts exist yet. Create one with create_user.py.</p>
+          {% endif %}
+
+        {% elif o.status == 'ASSIGNED' and o.payment_status == 'UNPAID' %}
+          <h3 class="mini-title">Confirm payment</h3>
+          <p>Expecting <strong>₹{{ o.price }}</strong> from the buyer.</p>
+          {% if o.payment_ref %}
+            <p>Buyer's UPI transaction ID: <strong>{{ o.payment_ref }}</strong></p>
+          {% else %}
+            <p class="hint">The buyer hasn't entered a transaction ID yet.</p>
+          {% endif %}
+          <p class="hint">Check your UPI app for this exact amount before confirming.</p>
+          <form method="post" action="{{ url_for('pages.liaison_confirm', order_id=o.id) }}">
+            <button class="btn-primary">Confirm payment received</button>
+          </form>
+
+        {% elif o.status == 'ASSIGNED' and o.payment_status == 'PAID' %}
+          <p class="paid-note">Paid ✓</p>
+          <p class="hint">Waiting for the artisan to finish and upload the photo.</p>
+
+        {% elif o.status == 'REVIEW' %}
+          <h3 class="mini-title">Check the finished work</h3>
+          {% if o.final_url %}
+            <a href="{{ o.final_url }}" target="_blank">
+              <img class="photo-review" src="{{ o.final_url }}" alt="Finished work">
+            </a>
+          {% endif %}
+          <form method="post" action="{{ url_for('pages.liaison_approve', order_id=o.id) }}">
+            <button class="btn-primary">Approve</button>
+          </form>
+
+        {% elif o.status == 'COMPLETED' %}
+          <p class="paid-note">Completed ✓</p>
+          {% if o.final_url %}
+            <a href="{{ o.final_url }}" target="_blank">
+              <img class="thumb" src="{{ o.final_url }}" alt="Finished work">
+            </a>
+          {% endif %}
+        {% endif %}
+
+      </div>
+    </div>
+  </article>
+  {% else %}
+    <p class="empty">No orders yet. New buyer requests will appear here.</p>
   {% endfor %}
-  </tbody>
-</table>
 </div>
 {% endblock %}

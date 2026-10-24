@@ -43,10 +43,17 @@ def create_order(buyer_id, spec, photo):
     return order_id
 
 
-def assign_order(order_id, artisan_id, translated_spec):
+def assign_order(order_id, artisan_id, translated_spec, price):
     spec = (translated_spec or "").strip()
     if not spec:
         raise OrderError("Translation is required")
+
+    try:
+        price = int(price)
+    except (TypeError, ValueError):
+        raise OrderError("Price must be a whole number")
+    if price < 1:
+        raise OrderError("Price must be above 0")
 
     with closing(get_db()) as conn:
         if not conn.execute(
@@ -56,13 +63,41 @@ def assign_order(order_id, artisan_id, translated_spec):
 
         cur = conn.execute(
             """UPDATE orders
-               SET artisan_id = ?, translated_spec = ?, status = 'ASSIGNED',
+               SET artisan_id = ?, translated_spec = ?, price = ?,
+                   status = 'ASSIGNED', payment_status = 'UNPAID',
                    updated_at = CURRENT_TIMESTAMP
                WHERE id = ? AND status = 'DRAFT'""",
-            (artisan_id, spec, order_id),
+            (artisan_id, spec, price, order_id),
         )
         if cur.rowcount == 0:
             raise OrderError(wrong_state(conn, order_id, "DRAFT"))
+        conn.commit()
+
+
+def submit_payment_ref(buyer_id, order_id, ref):
+    ref = (ref or "").strip()
+    with closing(get_db()) as conn:
+        cur = conn.execute(
+            """UPDATE orders
+               SET payment_ref = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ? AND buyer_id = ? AND status = 'ASSIGNED' AND payment_status = 'UNPAID'""",
+            (ref, order_id, buyer_id),
+        )
+        if cur.rowcount == 0:
+            raise OrderError("Could not save transaction ID (order may not be in assigned/unpaid state or not owned by you)")
+        conn.commit()
+
+
+def confirm_payment(order_id):
+    with closing(get_db()) as conn:
+        cur = conn.execute(
+            """UPDATE orders
+               SET payment_status = 'PAID', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ? AND status = 'ASSIGNED' AND payment_status = 'UNPAID'""",
+            (order_id,),
+        )
+        if cur.rowcount == 0:
+            raise OrderError("Could not confirm payment (order may not be assigned or is already paid)")
         conn.commit()
 
 
@@ -74,10 +109,21 @@ def upload_final(artisan_id, order_id, photo):
         raise OrderError("Only JPG or PNG images are allowed")
 
     with closing(get_db()) as conn:
+        # Check payment status before allowing upload
+        order = conn.execute(
+            "SELECT payment_status FROM orders WHERE id = ? AND artisan_id = ?",
+            (order_id, artisan_id)
+        ).fetchone()
+        
+        if not order:
+            raise OrderError("Order not found or not assigned to you")
+        if order["payment_status"] != "PAID":
+            raise OrderError("Payment has not been confirmed yet")
+
         cur = conn.execute(
             """UPDATE orders
                SET status = 'REVIEW', updated_at = CURRENT_TIMESTAMP
-               WHERE id = ? AND artisan_id = ? AND status = 'ASSIGNED'""",
+               WHERE id = ? AND artisan_id = ? AND status = 'ASSIGNED' AND payment_status = 'PAID'""",
             (order_id, artisan_id),
         )
         if cur.rowcount == 0:
@@ -117,7 +163,8 @@ def list_orders(user):
     if user["role"] == "BUYER":
         where, args = " WHERE o.buyer_id = ?", (user["id"],)
     elif user["role"] == "ARTISAN":
-        where, args = " WHERE o.artisan_id = ?", (user["id"],)
+        # Artisans only see paid assigned orders
+        where, args = " WHERE o.artisan_id = ? AND o.payment_status = 'PAID'", (user["id"],)
     else:  # LIAISON sees everything
         where, args = "", ()
 

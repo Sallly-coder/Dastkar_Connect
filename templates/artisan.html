@@ -1,38 +1,45 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>My task</h1>
+<div class="page-narrow">
+  <h1 class="page-title">My task</h1>
+  <p class="page-sub">Make what is described below, then upload a clear photo of the finished piece.</p>
 
-{% if task %}
-<div class="table-wrap">
-<table>
-  <thead><tr><th>#</th><th>What to make</th><th>Status</th><th>Action</th></tr></thead>
-  <tbody>
-  <tr>
-    <td>{{ task.id }}</td>
-    <td>
-      {{ task.translated_spec }}
-      {% if task.inspiration_url %}
-        <br>
-        <a href="{{ task.inspiration_url }}" target="_blank">
-          <img class="thumb" src="{{ task.inspiration_url }}" alt="Buyer's reference photo">
-        </a>
-      {% endif %}
-    </td>
-    <td>{{ task.status }}</td>
-    <td>
+  {% if task %}
+  <article class="order-card">
+    <div class="order-head">
+      <strong>Order #{{ task.id }}</strong>
+      <span class="badge badge-{{ task.status|lower }}">{{ task.status }}</span>
+    </div>
+
+    <h3 class="task-label">What to make</h3>
+    <p class="task-text">{{ task.translated_spec }}</p>
+
+    {% if task.inspiration_url %}
+      <h3 class="task-label">Reference photo from the buyer</h3>
+      <a href="{{ task.inspiration_url }}" target="_blank">
+        <img class="task-photo" src="{{ task.inspiration_url }}" alt="Buyer's reference photo">
+      </a>
+      <p class="hint">Tap the photo to see it full size.</p>
+    {% endif %}
+
+    <div class="upload-box">
+      <h3 class="task-label">Upload the finished work</h3>
       <form method="post"
             action="{{ url_for('pages.artisan_upload', order_id=task.id) }}"
             enctype="multipart/form-data">
-        <input class="big-btn" type="file" name="photo"
+        <input class="file-field large" type="file" name="photo"
                accept="image/jpeg,image/png" capture="environment" required>
-        <button class="big-btn">Submit for review</button>
+        <p class="hint">JPG or PNG, up to 5 MB.</p>
+        <button class="btn-primary">Submit for review</button>
       </form>
-    </td>
-  </tr>
-  </tbody>
-</table>
+    </div>
+  </article>
+
+  {% else %}
+  <p class="empty">
+    No task right now. When the NGO assigns you an order and the buyer's payment is confirmed,
+    it will appear here.
+  </p>
+  {% endif %}
 </div>
-{% else %}
-<p>No task assigned right now.</p>
-{% endif %}
 {% endblock %}
