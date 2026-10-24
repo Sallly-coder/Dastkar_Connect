@@ -35,6 +35,14 @@ def buyer_create():
         "Order submitted")
     return redirect(url_for("pages.buyer"))
 
+@bp.post("/buyer/pay/<int:order_id>")
+@role_required("BUYER")
+def buyer_pay_ref(order_id):
+    attempt(lambda: orders.submit_payment_ref(
+        g.user["id"], order_id, request.form.get("payment_ref")),
+        "Transaction ID saved")
+    return redirect(url_for("pages.buyer"))
+
 # ---- Liaison ----
 @bp.get("/liaison")
 @role_required("LIAISON")
@@ -46,7 +54,10 @@ def liaison():
 @role_required("LIAISON")
 def liaison_assign(order_id):
     attempt(lambda: orders.assign_order(
-        order_id, request.form.get("artisan_id"), request.form.get("translated_spec")),
+        order_id,
+        request.form.get("artisan_id"),
+        request.form.get("translated_spec"),
+        request.form.get("price")),
         "Order assigned")
     return redirect(url_for("pages.liaison"))
 
@@ -54,6 +65,12 @@ def liaison_assign(order_id):
 @role_required("LIAISON")
 def liaison_approve(order_id):
     attempt(lambda: orders.approve_order(order_id), "Order approved")
+    return redirect(url_for("pages.liaison"))
+
+@bp.post("/liaison/confirm/<int:order_id>")
+@role_required("LIAISON")
+def liaison_confirm(order_id):
+    attempt(lambda: orders.confirm_payment(order_id), "Payment confirmed")
     return redirect(url_for("pages.liaison"))
 
 # ---- Artisan ----
