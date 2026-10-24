@@ -43,10 +43,16 @@ def create_order(buyer_id, spec, photo):
     return order_id
 
 
-def assign_order(order_id, artisan_id, translated_spec):
+def assign_order(order_id, artisan_id, translated_spec, price):
     spec = (translated_spec or "").strip()
     if not spec:
         raise OrderError("Translation is required")
+    try:
+        price = int(price)
+    except (TypeError, ValueError):
+        raise OrderError("Enter the price in whole rupees")
+    if price <= 0:
+        raise OrderError("Price must be more than 0")
 
     with closing(get_db()) as conn:
         if not conn.execute(
@@ -56,13 +62,46 @@ def assign_order(order_id, artisan_id, translated_spec):
 
         cur = conn.execute(
             """UPDATE orders
-               SET artisan_id = ?, translated_spec = ?, status = 'ASSIGNED',
-                   updated_at = CURRENT_TIMESTAMP
+               SET artisan_id = ?, translated_spec = ?, price = ?, status = 'ASSIGNED',
+                   payment_status = 'UNPAID', updated_at = CURRENT_TIMESTAMP
                WHERE id = ? AND status = 'DRAFT'""",
-            (artisan_id, spec, order_id),
+            (artisan_id, spec, price, order_id),
         )
         if cur.rowcount == 0:
             raise OrderError(wrong_state(conn, order_id, "DRAFT"))
+        conn.commit()
+
+
+def submit_payment_ref(buyer_id, order_id, ref):
+    """Buyer (optional) types the UPI transaction ID so the liaison can match the payment."""
+    ref = (ref or "").strip()
+    if not ref:
+        raise OrderError("Enter the UPI transaction ID")
+    if len(ref) > 60:
+        raise OrderError("Transaction ID is too long")
+    with closing(get_db()) as conn:
+        cur = conn.execute(
+            """UPDATE orders SET payment_ref = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ? AND buyer_id = ? AND status = 'ASSIGNED' AND payment_status = 'UNPAID'""",
+            (ref, order_id, buyer_id),
+        )
+        if cur.rowcount == 0:
+            raise OrderError("This order is not waiting for payment")
+        conn.commit()
+
+
+def confirm_payment(order_id):
+    """Liaison confirms the money reached the NGO account. Unlocks the order for the artisan."""
+    with closing(get_db()) as conn:
+        cur = conn.execute(
+            """UPDATE orders
+               SET payment_status = 'PAID', paid_at = CURRENT_TIMESTAMP,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE id = ? AND status = 'ASSIGNED' AND payment_status = 'UNPAID'""",
+            (order_id,),
+        )
+        if cur.rowcount == 0:
+            raise OrderError("This order is not waiting for payment")
         conn.commit()
 
 
@@ -77,10 +116,17 @@ def upload_final(artisan_id, order_id, photo):
         cur = conn.execute(
             """UPDATE orders
                SET status = 'REVIEW', updated_at = CURRENT_TIMESTAMP
-               WHERE id = ? AND artisan_id = ? AND status = 'ASSIGNED'""",
+               WHERE id = ? AND artisan_id = ? AND status = 'ASSIGNED'
+                 AND payment_status = 'PAID'""",
             (order_id, artisan_id),
         )
         if cur.rowcount == 0:
+            row = conn.execute(
+                "SELECT status, artisan_id, payment_status FROM orders WHERE id = ?", (order_id,)
+            ).fetchone()
+            if (row and row["status"] == "ASSIGNED" and row["artisan_id"] == artisan_id
+                    and row["payment_status"] != "PAID"):
+                raise OrderError("Payment has not been confirmed yet")
             raise OrderError(wrong_state(conn, order_id, "ASSIGNED"))
         conn.execute(
             "INSERT INTO media (order_id, url, type) VALUES (?, ?, 'FINAL')",
@@ -117,7 +163,7 @@ def list_orders(user):
     if user["role"] == "BUYER":
         where, args = " WHERE o.buyer_id = ?", (user["id"],)
     elif user["role"] == "ARTISAN":
-        where, args = " WHERE o.artisan_id = ?", (user["id"],)
+        where, args = " WHERE o.artisan_id = ? AND o.payment_status = 'PAID'", (user["id"],)
     else:  # LIAISON sees everything
         where, args = "", ()
 
