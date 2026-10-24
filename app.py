@@ -5,6 +5,7 @@ from flask import Flask
 
 load_dotenv()
 
+
 from init_db import init_db
 from seed import seed_db
 from routes.auth import auth_bp
@@ -15,6 +16,8 @@ if not os.environ.get("SECRET_KEY"):
 
 app = Flask(__name__)
 app.secret_key = os.environ["SECRET_KEY"]
+app.config["UPI_ID"] = os.getenv("UPI_ID", "")
+app.config["NGO_NAME"] = os.getenv("NGO_NAME", "")
 app.config["UPLOAD_FOLDER"] = "uploads"
 
 app.register_blueprint(auth_bp)

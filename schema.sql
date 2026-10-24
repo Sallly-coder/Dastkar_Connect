@@ -8,6 +8,15 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+
+
+CREATE TABLE IF NOT EXISTS media (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id   INTEGER NOT NULL REFERENCES orders(id),
+  url        TEXT NOT NULL,
+  type       TEXT NOT NULL CHECK (type IN ('INSPIRATION','FINAL')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS orders (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   buyer_id        INTEGER NOT NULL REFERENCES users(id),
@@ -16,14 +25,11 @@ CREATE TABLE IF NOT EXISTS orders (
   translated_spec TEXT,
   status          TEXT NOT NULL DEFAULT 'DRAFT'
                   CHECK (status IN ('DRAFT','ASSIGNED','REVIEW','COMPLETED')),
+  price           INTEGER,
+  payment_status  TEXT NOT NULL DEFAULT 'UNPAID'
+                  CHECK (payment_status IN ('UNPAID','PAID')),
+  payment_ref     TEXT,
+  paid_at         DATETIME,
   created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS media (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id   INTEGER NOT NULL REFERENCES orders(id),
-  url        TEXT NOT NULL,
-  type       TEXT NOT NULL CHECK (type IN ('INSPIRATION','FINAL')),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
