@@ -12,6 +12,21 @@
   <div class="card">
     <strong>#{{ o.id }}</strong> <span class="badge">{{ o.status }}</span>
     <p>{{ o.original_spec }}</p>
+
+    <!-- Payment section added here inside the order card -->
+    {% if o.status == 'ASSIGNED' and o.payment_status == 'UNPAID' %}
+      <p>Please pay <strong>₹{{ o.price }}</strong> to {{ config.NGO_NAME }}.</p>
+      <img src="{{ url_for('static', filename='img/payment_qr.png') }}" alt="Payment QR" style="max-width:220px">
+      <p>Take a screenshot, or scan with any UPI app. UPI ID: {{ config.UPI_ID }}</p>
+      <form method="post" action="{{ url_for('pages.buyer_pay_ref', order_id=o.id) }}">
+        <input name="payment_ref" placeholder="UPI transaction ID (optional)">
+        <button>Save</button>
+      </form>
+    {% elif o.payment_status == 'PAID' %}
+      <p>Paid ✓</p>
+    {% endif %}
+
+    <!-- Completed image view -->
     {% if o.status == 'COMPLETED' and o.final_url %}
       <img src="{{ o.final_url }}" alt="Finished work">
     {% endif %}
