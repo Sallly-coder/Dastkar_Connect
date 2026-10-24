@@ -47,6 +47,12 @@ def assign_order(order_id, artisan_id, translated_spec, price):
     spec = (translated_spec or "").strip()
     if not spec:
         raise OrderError("Translation is required")
+    try:
+        price = int(price)
+    except (TypeError, ValueError):
+        raise OrderError("Enter the price in whole rupees")
+    if price <= 0:
+        raise OrderError("Price must be more than 0")
 
     try:
         price = int(price)
@@ -127,6 +133,12 @@ def upload_final(artisan_id, order_id, photo):
             (order_id, artisan_id),
         )
         if cur.rowcount == 0:
+            row = conn.execute(
+                "SELECT status, artisan_id, payment_status FROM orders WHERE id = ?", (order_id,)
+            ).fetchone()
+            if (row and row["status"] == "ASSIGNED" and row["artisan_id"] == artisan_id
+                    and row["payment_status"] != "PAID"):
+                raise OrderError("Payment has not been confirmed yet")
             raise OrderError(wrong_state(conn, order_id, "ASSIGNED"))
         conn.execute(
             "INSERT INTO media (order_id, url, type) VALUES (?, ?, 'FINAL')",
