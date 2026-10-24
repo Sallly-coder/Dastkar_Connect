@@ -6,9 +6,12 @@ def hash_password(plain: str) -> str:
     return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 USERS = [
-    ("Test Buyer",   "buyer@test.com",   "buyer123",   "BUYER"),
-    ("Test Liaison", "liaison@test.com", "liaison123", "LIAISON"),
-    ("Test Artisan", "artisan@test.com", "artisan123", "ARTISAN"),
+    ("Test Buyer",    "buyer@test.com",    "buyer123",   "BUYER"),
+    ("Test Liaison",  "liaison@test.com",  "liaison123", "LIAISON"),
+    ("Rani Devi",     "rani@test.com",     "artisan123", "ARTISAN"),
+    ("Meena Kumari",  "meena@test.com",    "artisan123", "ARTISAN"),
+    ("Lakshmi Bai",   "lakshmi@test.com",  "artisan123", "ARTISAN"),
+    ("Sunita Sharma", "sunita@test.com",   "artisan123", "ARTISAN"),
 ]
 
 def seed_db():
