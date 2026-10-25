@@ -8,8 +8,7 @@ from security import check_password, create_token, hash_password, require_role, 
 
 from flask import Blueprint
 auth_bp = Blueprint("auth", __name__)
-# Where each role lands after login. Replace the endpoints once your
-# teammates agree on their page names.
+# Where each role lands after login. 
 ROLE_HOME = {
     "BUYER": "pages.home",
     "LIAISON": "pages.home",
