@@ -75,10 +75,11 @@ def login():
     return render_template("login.html")
 
 
-@bp.route("/logout", methods=["GET", "POST"])
+@auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
-    session.clear()  # clears the user session
-    return redirect(url_for("pages.login"))  # or redirect to home/login page
+    session.clear()
+    return redirect(url_for("pages.login"))
+
 
 
 # --- Temporary test routes: delete once teammates' routes exist ---
