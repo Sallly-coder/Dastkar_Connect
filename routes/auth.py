@@ -77,9 +77,13 @@ def login():
 
 @auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
-    # Clear the authentication cookie by expiring it immediately
-    resp = redirect("/")
+    # Clear the current session
+    session.clear()
+
+    # Clear the authentication cookie
+    resp = redirect(url_for("pages.login"))
     resp.set_cookie("token", "", expires=0)
+
     return resp
 
 
