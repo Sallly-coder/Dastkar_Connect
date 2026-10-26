@@ -81,7 +81,7 @@ def logout():
     session.clear()
 
     # Clear the authentication cookie
-    resp = redirect(url_for("pages.login"))
+    resp = redirect("/")
     resp.set_cookie("token", "", expires=0)
 
     return resp
