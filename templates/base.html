@@ -32,7 +32,7 @@
     </div>
 
     <div class="nav-right">
-      {% if current_user and current_user.is_authenticated %}
+      {% if g.user %}
         <a href="{{ url_for('auth.logout') }}" class="nav-btn-secondary">Logout</a>
       {% else %}
         <a href="{{ url_for('auth.login') }}" class="nav-btn-primary">Sign In</a>
