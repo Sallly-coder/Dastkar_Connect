@@ -1,14 +1,19 @@
 import sqlite3
 
 from flask import (Blueprint, flash, g, jsonify, redirect, render_template,
-                   request, url_for)
+                   request, url_for, session)  # Added session here
 
 from db import get_db
 from security import check_password, create_token, hash_password, require_role, verify_token
 
-from flask import Blueprint
 auth_bp = Blueprint("auth", __name__)
+<<<<<<< HEAD
 # Where each role lands after login. 
+=======
+
+# Where each role lands after login. Replace the endpoints once your
+# teammates agree on their page names.
+>>>>>>> 3164cb36036fe263fdc8ddb7828f15fc055617a1
 ROLE_HOME = {
     "BUYER": "pages.home",
     "LIAISON": "pages.home",
@@ -74,10 +79,15 @@ def login():
     return render_template("login.html")
 
 
-@auth_bp.post("/logout")
+@auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
-    resp = redirect(url_for("auth.login"))
-    resp.delete_cookie("token")
+    # Clear the current session
+    session.clear()
+
+    # Clear the authentication cookie
+    resp = redirect("/")
+    resp.set_cookie("token", "", expires=0)
+
     return resp
 
 
