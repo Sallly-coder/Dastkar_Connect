@@ -1,9 +1,61 @@
 {% extends "base.html" %}
 {% block content %}
+
+{# One card per craft. Display only: no links. #}
+{% macro craft_card(c) %}
+<figure class="craft-card">
+  <img class="craft-img"
+       src="{{ url_for('static', filename='img/crafts/' ~ c.img) }}"
+       alt="{{ c.name }}" loading="lazy">
+  <figcaption>
+    <h4 class="craft-name">{{ c.name }}</h4>
+    <p class="craft-place">{{ c.place }}</p>
+    <p class="craft-desc">{{ c.desc }}</p>
+  </figcaption>
+</figure>
+{% endmacro %}
+
+{% set unesco_crafts = [
+  {"img": "danka-embroidery.jpg", "name": "Danka Embroidery", "place": "Udaipur",
+   "desc": "Small faceted metal pieces stitched onto silk and velvet with zari thread, so the cloth glints like jewels."},
+  {"img": "split-ply-weaving.jpeg", "name": "Split-Ply Band Weaving", "place": "Rajasthan",
+   "desc": "A specialised traditional braiding and weaving technique."}
+] %}
+
+{% set jaipur_crafts = [
+  {"img": "blue-pottery.jpeg", "name": "Blue Pottery", "place": "Jaipur",
+   "desc": "Hand-crafted quartz-based ceramic art with floral and animal motifs."},
+  {"img": "block-printing.jpeg", "name": "Block Printing & Dabu", "place": "Bagru & Sanganer",
+   "desc": "Natural-dye woodblock printing and mud-resist dyeing on cloth."},
+  {"img": "lac-bangles.jpeg", "name": "Lac Bangles", "place": "Jaipur",
+   "desc": "Lacquer-ware bangles inlaid with glass or mirrors."},
+  {"img": "gotta-patti.jpeg", "name": "Gotta Patti & Zardozi", "place": "Jaipur",
+   "desc": "Fine metallic thread and ribbon embroidery on textiles."}
+] %}
+
 <div class="page-narrow">
   <h1 class="page-title">New order</h1>
   <p class="page-sub">Tell us what you'd like made. A reference photo helps the artisan.</p>
 
+  <!-- ===== Craft showcase (display only) ===== -->
+  <section class="showcase">
+    <h2 class="showcase-title">Explore Rajasthani crafts</h2>
+    <p class="showcase-sub">A few traditions our artisans work in. Just for inspiration.</p>
+
+    <h3 class="showcase-group">In UNESCO's textile documentation</h3>
+    <p class="hint">Both appear in UNESCO's "Handmade for the 21st Century" project documenting 50 Indian textiles.</p>
+    <div class="craft-grid">
+      {% for c in unesco_crafts %}{{ craft_card(c) }}{% endfor %}
+    </div>
+
+    <h3 class="showcase-group">Traditions of Jaipur</h3>
+    <p class="hint">Jaipur is a UNESCO Creative City of Crafts and Folk Art.</p>
+    <div class="craft-grid">
+      {% for c in jaipur_crafts %}{{ craft_card(c) }}{% endfor %}
+    </div>
+  </section>
+
+  <!-- ===== Order form ===== -->
   <section class="panel">
     <form method="post" action="{{ url_for('pages.buyer_create') }}" enctype="multipart/form-data">
       <div class="form-group">

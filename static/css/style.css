@@ -482,3 +482,46 @@ textarea.field { min-height: 110px; resize: vertical; }
 }
 .file-field.large { padding: 1rem; font-size: 1rem; }
 .upload-box .btn-primary { margin-top: 0.75rem; min-height: 52px; font-size: 1.05rem; }
+
+/* ---- Craft showcase (buyer page, display only) ---- */
+.showcase { margin-bottom: 2.5rem; }
+.showcase-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin-bottom: 0.2rem;
+}
+.showcase-sub { color: var(--ink-muted); margin-bottom: 0.5rem; }
+.showcase-group {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  margin: 1.5rem 0 0.25rem;
+}
+
+.craft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));  /* 2 across on phones, 4 on desktop */
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+.craft-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.craft-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--accent-light);   /* tinted block if a photo file is missing */
+}
+.craft-card figcaption { padding: 0.75rem 0.85rem 0.9rem; }
+.craft-name { font-size: 0.95rem; font-weight: 700; line-height: 1.3; }
+.craft-place { font-size: 0.75rem; font-weight: 600; color: var(--accent); margin: 0.1rem 0 0.4rem; }
+.craft-desc { font-size: 0.8rem; color: var(--ink-muted); line-height: 1.5; }
