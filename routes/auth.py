@@ -7,19 +7,13 @@ from db import get_db
 from security import check_password, create_token, hash_password, require_role, verify_token
 
 auth_bp = Blueprint("auth", __name__)
-<<<<<<< HEAD
-# Where each role lands after login. 
-=======
 
-# Where each role lands after login. Replace the endpoints once your
-# teammates agree on their page names.
->>>>>>> 3164cb36036fe263fdc8ddb7828f15fc055617a1
+
 ROLE_HOME = {
-    "BUYER": "pages.home",
-    "LIAISON": "pages.home",
-    "ARTISAN": "pages.home",
+    "BUYER": "pages.buyer",
+    "LIAISON": "pages.liaison",
+    "ARTISAN": "pages.artisan",
 }
-
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
@@ -81,13 +75,9 @@ def login():
 
 @auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
-    # Clear the current session
-    session.clear()
-
-    # Clear the authentication cookie
+    # Clear the authentication cookie by expiring it immediately
     resp = redirect("/")
     resp.set_cookie("token", "", expires=0)
-
     return resp
 
 
